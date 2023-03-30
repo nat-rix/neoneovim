@@ -31,6 +31,8 @@ require('packer').startup(function(use)
     use 'folke/trouble.nvim'
     use 'stevearc/dressing.nvim'
     use 'ziontee113/icon-picker.nvim'
+    use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'make' }
+    use { 'zbirenbaum/copilot.lua' }
 
     use {
         'williamboman/mason-lspconfig.nvim',
@@ -38,6 +40,11 @@ require('packer').startup(function(use)
             'williamboman/mason.nvim',
             'neovim/nvim-lspconfig'
         }
+    }
+    use {
+        'zbirenbaum/copilot.lua',
+        cmd = 'Copilot',
+        event = 'InsertEnter',
     }
 end)
 
@@ -264,8 +271,12 @@ rt.setup({
         settings = {
             ["rust-analyzer"] = {
                 inlayHints = true,
+                procMacro = {
+                    enable = false,
+                },
                 checkOnSave = {
-                    command = "clippy",
+                    extraArgs = { "--all-features" },
+                    command = "check",
                 },
             }
         }
@@ -274,7 +285,27 @@ rt.setup({
 rt.inlay_hints.other_hints_prefix = " "
 rt.inlay_hints.parameter_hints_prefix = " "
 
+require('telescope').load_extension('fzf')
+require('telescope').setup {
+    defaults = {
+        color_devicons = false,
+        layout_config = {
+            width = 0.7,
+            horizontal = {
+                preview_width = 0.6
+            }
+        }
+    },
+    pickers = {
+        buffers = {
+            ignore_current_buffer = true,
+            sort_mru = true,
+        },
+    },
+}
+
 require('telescope.builtin')
+
 
 require('lspsaga').setup({
     ui = {
@@ -352,4 +383,49 @@ require('hlargs').setup()
 require('dressing').setup({})
 require('icon-picker').setup({
     disable_legacy_commands = true
+})
+
+
+require('copilot').setup({
+    panel = {
+        enabled = true,
+        auto_refresh = false,
+        keymap = {
+            jump_prev = "[[",
+            jump_next = "]]",
+            accept = "<CR>",
+            refresh = "gr",
+            open = "<M-CR>"
+        },
+        layout = {
+            position = "bottom", -- | top | left | right
+            ratio = 0.4
+        },
+    },
+    suggestion = {
+        enabled = true,
+        auto_trigger = true,
+        debounce = 75,
+        keymap = {
+            accept = "<M-t>",
+            accept_word = false,
+            accept_line = false,
+            next = "<M-h>",
+            prev = "<M-g>",
+            dismiss = "<C-g>",
+        },
+    },
+    filetypes = {
+        yaml = false,
+        markdown = false,
+        help = false,
+        gitcommit = false,
+        gitrebase = false,
+        hgcommit = false,
+        svn = false,
+        cvs = false,
+        ["."] = false,
+    },
+    copilot_node_command = 'node', -- Node.js version must be > 16.x
+    server_opts_overrides = {},
 })

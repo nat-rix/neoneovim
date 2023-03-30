@@ -18,10 +18,9 @@ set nospell
 set guioptions=Pdeip
 set hlsearch
 set incsearch
+set softtabstop=0 noexpandtab
 set tabstop=4
-set softtabstop=4
 set shiftwidth=4
-set expandtab
 set autoindent
 set smartindent
 set smarttab
@@ -55,6 +54,7 @@ set listchars+=space:⋅
 set pumblend=0
 " global statusline
 set laststatus=3
+let mapleader = ','
 
 
 let g:loaded_netrw=1
@@ -101,6 +101,16 @@ noremap gp <cmd>BufferPrevious<cr>
 noremap g) <cmd>BufferMoveNext<cr>
 noremap g( <cmd>BufferMovePrevious<cr>
 
+" Movement between windows
+noremap <C-UP> <C-W><UP>
+noremap <C-DOWN> <C-W><DOWN>
+noremap <C-LEFT> <C-W><LEFT>
+noremap <C-RIGHT> <C-W><RIGHT>
+inoremap <C-UP> <ESC><C-W><UP>
+inoremap <C-DOWN> <ESC><C-W><DOWN>
+inoremap <C-LEFT> <ESC><C-W><LEFT>
+inoremap <C-RIGHT> <ESC><C-W><RIGHT>
+
 cabbrev bc BufferClose
 cabbrev Update PackerUpdate
 cabbrev Install PackerInstall
@@ -111,14 +121,21 @@ cabbrev Cargo RustOpenCargo
 " sudo write file
 command! W execute 'w !sudo tee % > /dev/null' <bar> edit!
 
+try
+    set undodir=~/.vim_runtime/temp_dirs/undodir
+    set undofile
+catch
+endtry
+
 noremap gm <cmd>Telescope man_pages sections=ALL<cr>
 noremap ga <cmd>Lspsaga code_action<cr>
+noremap <F2> <cmd>Lspsaga rename<cr>
 noremap gd <cmd>lua vim.lsp.buf.definition()<cr>
 noremap gt <cmd>Trouble<cr>
+noremap <leader>o <cmd>Telescope buffers<cr>
 noremap ? <cmd>Lspsaga hover_doc<cr>
 
 noremap gf <cmd>Telescope find_files<cr>
-noremap <F12> <cmd>Lspsaga rename<cr>
 
 " ==================================================
 " ====   Plugin Stuff ==============================
@@ -134,3 +151,4 @@ command LspServers lua for _, server in pairs(require('lspconfig').util.availabl
 command Format lua vim.lsp.buf.format()
 autocmd BufWritePre * Format
 hi Normal guibg=none
+
