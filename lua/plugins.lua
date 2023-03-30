@@ -98,7 +98,7 @@ cmp.setup({
         documentation = cmp.config.window.bordered(),
     },
     mapping = cmp.mapping.preset.insert({
-        ['<C-b>'] = cmp.mapping.scroll_docs( -4),
+        ['<C-b>'] = cmp.mapping.scroll_docs(-4),
         ['<C-f>'] = cmp.mapping.scroll_docs(4),
         ['<C-Space>'] = cmp.mapping.complete(),
         ['<C-e>'] = cmp.mapping.abort(),
@@ -190,16 +190,18 @@ require("mason-lspconfig").setup_handlers {
     function(server_name)
         if server_name == 'sumneko_lua' then
             require('lspconfig')[server_name].setup {
-                settings = { Lua = {
-                    runtime = { version = 'LuaJIT' },
-                    diagnostics = { globals = { 'vim' } },
-                    workspace = {
-                        -- Make the server aware of Neovim runtime files
-                        library = vim.api.nvim_get_runtime_file("", true),
-                    },
-                    -- Do not send telemetry data containing a randomized but unique identifier
-                    telemetry = { enable = false },
-                } }
+                settings = {
+                    Lua = {
+                        runtime = { version = 'LuaJIT' },
+                        diagnostics = { globals = { 'vim' } },
+                        workspace = {
+                            -- Make the server aware of Neovim runtime files
+                            library = vim.api.nvim_get_runtime_file("", true),
+                        },
+                        -- Do not send telemetry data containing a randomized but unique identifier
+                        telemetry = { enable = false },
+                    }
+                }
             }
         else
             require('lspconfig')[server_name].setup {
@@ -289,12 +291,20 @@ require 'bufferline'.setup {
     tabpages = true,
     closable = true,
     clickable = true,
-    icons = true,
-    icon_separator_active = '▎',
-    icon_separator_inactive = '▎',
-    icon_close_tab = '',
-    icon_close_tab_modified = '●',
-    icon_pinned = '車',
+    icons = {
+        filetype = { enable = true },
+        modified = { button = '●' },
+        pinned = { button = '車' },
+        separator = {
+            left = '▎',
+        },
+        inactive = {
+            separator = {
+                left = '▎',
+            }
+        },
+        button = '',
+    },
 }
 
 require("trouble").setup {

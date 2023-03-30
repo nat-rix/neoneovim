@@ -12,6 +12,7 @@ set clipboard=unnamedplus
 set number
 set relativenumber
 set numberwidth=3
+set nofoldenable
 set guicursor=n-v-c:block,i-ci-ve:ver25,r-cr:hor20,o:hor50,a:blinkwait700-blinkoff400-blinkon250-Cursor/lCursor,sm:block-blinkwait175-blinkoff150-blinkon175
 set nospell
 set guioptions=Pdeip
@@ -117,7 +118,7 @@ noremap gt <cmd>Trouble<cr>
 noremap ? <cmd>Lspsaga hover_doc<cr>
 
 noremap gf <cmd>Telescope find_files<cr>
-noremap <F12> <cmd>Telescope rename<cr>
+noremap <F12> <cmd>Lspsaga rename<cr>
 
 " ==================================================
 " ====   Plugin Stuff ==============================
