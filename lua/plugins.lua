@@ -272,11 +272,16 @@ rt.setup({
         settings = {
             ["rust-analyzer"] = {
                 inlayHints = true,
+                cargo = {
+                    buildScripts = {
+                        enable = true,
+                    },
+                },
                 procMacro = {
-                    enable = false,
+                    enable = true,
                 },
                 checkOnSave = {
-                    extraArgs = { "--all-features" },
+                    features = "all",
                     command = "check",
                 },
             }
