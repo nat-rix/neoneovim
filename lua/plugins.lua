@@ -31,6 +31,7 @@ require('packer').startup(function(use)
     use 'folke/trouble.nvim'
     use 'stevearc/dressing.nvim'
     use 'ziontee113/icon-picker.nvim'
+    use 'tpope/vim-sleuth'
     use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'make' }
     use { 'zbirenbaum/copilot.lua' }
 
