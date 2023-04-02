@@ -194,29 +194,38 @@ local capabilities = require('cmp_nvim_lsp').default_capabilities()
 local lsp_status = require('lsp-status')
 lsp_status.register_progress()
 
+local merged_caps = vim.tbl_extend('keep', capabilities, lsp_status.capabilities)
+local lsp_overrides = {
+    ["sumneko_lua"] = {
+        settings = {
+            Lua = {
+                runtime = { version = 'LuaJIT' },
+                diagnostics = { globals = { 'vim' } },
+                workspace = {
+                    -- Make the server aware of Neovim runtime files
+                    library = vim.api.nvim_get_runtime_file("", true),
+                },
+                -- Do not send telemetry data containing a randomized but unique identifier
+                telemetry = { enable = false },
+            }
+        }
+    },
+    ["clangd"] = {
+        capabilities = { offsetEncoding = "utf-8" }
+    }
+}
+
 require("mason-lspconfig").setup_handlers {
     function(server_name)
-        if server_name == 'sumneko_lua' then
-            require('lspconfig')[server_name].setup {
-                settings = {
-                    Lua = {
-                        runtime = { version = 'LuaJIT' },
-                        diagnostics = { globals = { 'vim' } },
-                        workspace = {
-                            -- Make the server aware of Neovim runtime files
-                            library = vim.api.nvim_get_runtime_file("", true),
-                        },
-                        -- Do not send telemetry data containing a randomized but unique identifier
-                        telemetry = { enable = false },
-                    }
-                }
-            }
-        else
-            require('lspconfig')[server_name].setup {
-                capabilities = vim.tbl_extend('keep', capabilities, lsp_status.capabilities),
-                on_attach = lsp_status.on_attach
-            }
+        local config = {
+            capabilities = merged_caps,
+            on_attach = lsp_status.on_attach
+        }
+        local override = lsp_overrides[server_name]
+        if override ~= nil then
+            config = vim.tbl_deep_extend('force', config, override)
         end
+        require('lspconfig')[server_name].setup(config)
     end
 }
 
