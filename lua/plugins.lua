@@ -384,6 +384,16 @@ end
 vim.keymap.set({ 'n', 'v' }, 'N', function() make_me_hop(false) end, { remap = false })
 vim.keymap.set({ 'n', 'v' }, '<C-n>', function() make_me_hop(true) end, { remap = false })
 
+vim.keymap.set({ 'v' }, 'R', function()
+    local restore = vim.fn.getreg('a')
+    vim.cmd('normal! "ay')
+    local text = vim.fn.escape(vim.fn.getreg('a'), '^/\\.*[]~$')
+    local idx, _ = text:find('\n', 1, true)
+    if idx ~= nil then text = text:sub(1, idx - 1) end
+    vim.api.nvim_input('<esc>:%s/' .. text .. '/')
+    vim.fn.setreg('a', restore)
+end, { remap = true })
+
 require('hlargs').setup()
 
 require('dressing').setup({})
