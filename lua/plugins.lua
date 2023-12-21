@@ -26,14 +26,16 @@ require('packer').startup(function(use)
     use 'hrsh7th/vim-vsnip'
     use 'm-demare/hlargs.nvim'
     use 'lewis6991/impatient.nvim'
-    use 'j-hui/fidget.nvim'
     use 'phaazon/hop.nvim'
     use 'folke/trouble.nvim'
     use 'stevearc/dressing.nvim'
     use 'ziontee113/icon-picker.nvim'
     use 'tpope/vim-sleuth'
+    use 'mfussenegger/nvim-dap'
     use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'make' }
     use { 'zbirenbaum/copilot.lua' }
+    use {'kaarmu/typst.vim', ft = {'typst'}}
+    use {'j-hui/fidget.nvim', tag = 'legacy'}
 
     use {
         'williamboman/mason-lspconfig.nvim',
@@ -44,9 +46,14 @@ require('packer').startup(function(use)
     }
     use {
         'zbirenbaum/copilot.lua',
-        cmd = 'Copilot',
+        cmd = 'Copilot2',
         event = 'InsertEnter',
     }
+    use {
+        'folke/todo-comments.nvim',
+         dependencies = { "nvim-lua/plenary.nvim" },
+         opts = {}
+}
 end)
 
 require('impatient')
@@ -231,11 +238,18 @@ vim.diagnostic.config({
     severity_sort = true
 })
 
+vim.filetype.add({
+  extension = {
+    typ = 'typst',
+}})
+
+
 local signs = { Error = " ", Warn = " ", Hint = " ", Info = " " }
 for type, icon in pairs(signs) do
     local hl = "DiagnosticSign" .. type
     vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
 end
+
 
 require 'nvim-treesitter.configs'.setup {
     ensure_installed = { "c", "lua", "rust", "toml", "vim", "markdown", "markdown_inline" },
@@ -250,6 +264,18 @@ require 'nvim-treesitter.configs'.setup {
         max_file_lines = nil,
     }
 }
+
+
+--parser_config.typst = {
+--  install_info = {
+--    url = "https://github.com/SeniorMars/tree-sitter-typst",
+--    files = { "src/parser.c", "src/scanner.c" },
+--    location = "tree-sitter-typst/lua",
+--    revision = "2e66ef4b798a26f0b82144143711f3f7a9e8ea35",
+--  },
+--  filetype = "typ",
+--  maintainers = { "@SeniorMars" },
+--}
 
 local rt = require("rust-tools")
 rt.setup({
@@ -267,29 +293,143 @@ rt.setup({
         },
     },
     server = {
-        on_attach = function(_, _)
+        on_attach = function(_, bufnr)
+            require("dap")
+            require("dapui")
+            -- Hover actions
+            vim.keymap.set("n", "K", rt.hover_actions.hover_actions, { buffer = bufnr })
+            -- Code action groups
+            -- vim.keymap.set("n", "<Space>a", rt.code_action_group.code_action_group, { buffer = bufnr })
         end,
+        flags = {
+            debounce_text_changes = 150,
+        },
         settings = {
             ["rust-analyzer"] = {
-                inlayHints = true,
+            inlayHints = true,
+                checkOnSave = {
+                    enable = true,
+                    features = "all",
+                    command = "clippy",
+                },
                 cargo = {
+                    allFeatures = true,
                     buildScripts = {
                         enable = true,
                     },
+                      loadOutDirsFromCheck = true,
                 },
                 procMacro = {
                     enable = true,
                 },
-                checkOnSave = {
-                    features = "all",
-                    command = "check",
+                assist = {
+                    importMergeBehaviour = "full",
+                    importPrefix = "plain",
                 },
-            }
-        }
-    }
+                callInfo = {
+                    full = true,
+                },
+                diagnostics = {
+                    enable = true,
+                    disabled = { "unresolved-proc-macro" },
+                    enableExperimental = true,
+                    warningsAsHint = {},
+                },
+            },
+        },
+    },
+    dap = {
+        adapter = {
+            type = "executable",
+            command = "lldb-vscode",
+            name = "rt_lldb",
+        },
+    },
 })
 rt.inlay_hints.other_hints_prefix = " "
 rt.inlay_hints.parameter_hints_prefix = " "
+
+
+-- dap configuration
+local dap = require("dap")
+dap.adapters.lldb = {
+  type = "executable",
+  command = "/usr/bin/lldb-vscode", -- adjust as needed, must be absolute path
+  name = "lldb",
+}
+
+
+dap.configurations.cpp = {
+  {
+    name = "Launch",
+    type = "lldb",
+    request = "launch",
+    program = function()
+      return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+    end,
+    cwd = "${workspaceFolder}",
+    stopOnEntry = false,
+    args = {},
+
+    -- 💀
+    -- if you change `runInTerminal` to true, you might need to change the yama/ptrace_scope setting:
+    --
+    --    echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
+    --
+    -- Otherwise you might get the following error:
+    --
+    --    Error on launch: Failed to attach to the target process
+    --
+    -- But you should be aware of the implications:
+    -- https://www.kernel.org/doc/html/latest/admin-guide/LSM/Yama.html
+    -- runInTerminal = false,
+  },
+}
+
+-- If you want to use this for Rust and C, add something like this:
+
+dap.configurations.c = dap.configurations.cpp
+dap.configurations.rust = {
+  {
+    name = "Launch",
+    type = "lldb",
+    request = "launch",
+    program = function()
+      return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+    end,
+    cwd = "${workspaceFolder}",
+    stopOnEntry = false,
+    args = {},
+    -- ... the previous config goes here ...,
+    initCommands = function()
+      -- Find out where to look for the pretty printer Python module
+      local rustc_sysroot = vim.fn.trim(vim.fn.system('rustc --print sysroot'))
+
+      local script_import = 'command script import "' .. rustc_sysroot .. '/lib/rustlib/etc/lldb_lookup.py"'
+      local commands_file = rustc_sysroot .. '/lib/rustlib/etc/lldb_commands'
+
+      local commands = {}
+      local file = io.open(commands_file, 'r')
+      if file then
+        for line in file:lines() do
+          table.insert(commands, line)
+        end
+        file:close()
+      end
+      table.insert(commands, 1, script_import)
+
+      return commands
+    end,
+    -- ...,
+  }
+}
+
+require'lspconfig'.typst_lsp.setup{
+    settings = {
+		exportPdf = "onType" -- Choose onType, onSave or never.
+        -- serverPath = "" -- Normally, there is no need to uncomment it.
+	}
+}
 
 require('telescope').load_extension('fzf')
 require('telescope').setup {
